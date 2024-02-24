@@ -1,4 +1,4 @@
-'''
+"""
 Script Name: About to Mux Shit Up
 Written By: Kieran Hanrahan
 
@@ -26,7 +26,7 @@ To Install:
 
     For a specific user, copy this file to:
     /opt/Autodesk/user/<user name>/python
-'''
+"""
 
 import flame
 
@@ -44,9 +44,9 @@ def message(string):
     print(' '.join([MESSAGE_PREFIX, string]))
 
 
-def mux_shit_up(selection):
-    """Append mux nodes to output of selection.  Pair alpha with rgb if found."""
 
+def mux_shit_up(selection):
+    """Process all selected nodes."""
     message(TITLE_VERSION)
     message('Script called from {}'.format(__file__))
 
@@ -71,12 +71,12 @@ def mux_shit_up(selection):
 
 
 def scope_clip_node(selection):
-    '''Filter for only clip nodes.'''
+    """Filter for only PyClipNode objects."""
     return all(isinstance(item, flame.PyClipNode) for item in selection)
 
 
 def get_batch_custom_ui_actions():
-    '''Python hook to add custom right click menu item in Batch.'''
+    """Python hook to add custom item to right click menu in Batch."""
     return [{'name': 'Create...',
              'actions': [{'name': 'About to Mux Shit Up',
                           'isVisible': scope_clip_node,
