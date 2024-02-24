@@ -4,6 +4,8 @@ Plugin for [Autodesk Flame software](http://www.autodesk.com/products/flame).
 
 Attach Mux nodes to the output sockets of the selected Clip nodes in the Batch schematic.
 
+![screenshot](about_to_mux_shit_up_demo.gif)
+
 ## Installation
 **Tested & working on 2024.1.2**
 
