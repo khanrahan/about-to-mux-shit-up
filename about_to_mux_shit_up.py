@@ -2,13 +2,13 @@
 Script Name: About to Mux Shit Up
 Written By: Kieran Hanrahan
 
-Script Version: 0.1.0
+Script Version: 1.0.0
 Flame Version: 2022
 
 URL: http://github.com/khanrahan/about-to-mux-shit-up
 
 Creation Date: 02.22.24
-Update Date: 02.22.24
+Update Date: 02.24.24
 
 Description:
 
@@ -31,7 +31,7 @@ To Install:
 import flame
 
 TITLE = 'About to Mux Shit Up'
-VERSION_INFO = (0, 1, 0)
+VERSION_INFO = (1, 0, 0)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = '{} v{}'.format(TITLE, VERSION)
 MESSAGE_PREFIX = '[PYTHON]'
