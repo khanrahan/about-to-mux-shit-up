@@ -44,6 +44,96 @@ def message(string):
     print(' '.join([MESSAGE_PREFIX, string]))
 
 
+def create_socket_pairs(sockets):
+    """Pair up corresponding RGB & Alpha sockets.
+
+    Args:
+        sockets: List of strings for the name of each output socket.
+
+    Returns:
+        A list containing tuples of each output socket and its corresponding alpha.
+        None is used if alpha not present.
+    """
+    result = []
+
+    for index, socket in enumerate(sockets):
+        # socket is an alpha that was already paired in results?
+        if len(result) >= 1 and socket == result[-1][1]:
+            continue
+        # following socket is the corresponding alpha?
+        if index + 1 < len(sockets) and sockets[index + 1] == socket + '_alpha':
+            pair = (socket, sockets[index + 1])
+        # no corresponding alpha
+        else:
+            pair = (socket, None)
+        result.append(pair)
+    return result
+
+
+def calculate_positions(anchor_node, quantity, spacing, axis_x=True, axis_y=True,
+                        offset=11):
+    """Generate new positions that are evely distributed based on the anchor node.
+
+    Args:
+        anchor_node (Flame PyNode object): Node to be used for starting position.
+        quantity (int): The intended number of new positions to evenly distribute.
+        spacing (tuple): Spacing between positions on X & Y axis as integers.
+        axis_x (bool, optional): Generate distributed positions for the x axis?
+        axis_y (bool, optional): Generate disributed positions for the y axis?
+        offset (int, optional): Offset necessary when anchor_node is expanded.
+
+    Returns:
+        A list of tuples containing integers representing the X & Y positions for the
+        Mux nodes.  Flame only takes integers for PyNode.set_pos_x or PyNode.set_pos_y
+    """
+    result = []
+
+    anchor_position = (anchor_node.pos_x.get_value(), anchor_node.pos_y.get_value())
+    distance_horizontal = (quantity - 1) * spacing[0]
+    distance_vertical = (quantity - 1) * spacing[1]
+
+    start_position_x = anchor_position[0] + int(distance_horizontal / 2)
+    start_position_y = anchor_position[1] + int(distance_vertical / 2)
+
+    for index in range(quantity):
+        if axis_x and anchor_node.collapsed.get_value():
+            x = start_position_x - index * spacing[0]
+        elif axis_x and not anchor_node.collapsed.get_value():
+            x = (start_position_x - index * spacing[0]) - (quantity - 1) * offset
+        else:
+            x = anchor_position[0]
+
+        if axis_y and anchor_node.collapsed.get_value():
+            y = start_position_y - index * spacing[1]
+        elif axis_y and not anchor_node.collapsed.get_value():
+            y = (start_position_y - index * spacing[1]) - (quantity - 1) * offset
+        else:
+            y = anchor_position[1]
+
+        position = (x, y)
+        result.append(position)
+    return result
+
+
+def connect_downstream_mux(node):
+    """Connect a downstream Mux node to each output socket.
+
+    Args:
+        node (Flame PyNode onject): Node with output sockets to connect Mux to.
+    """
+    socket_pairs = create_socket_pairs(node.output_sockets)
+    new_positions = calculate_positions(
+            node, len(socket_pairs), NODE_SPACING, axis_x=False)
+
+    for index, (socket, alpha) in enumerate(socket_pairs):
+        mux = flame.batch.create_node('Mux')
+        mux.pos_x.set_value(new_positions[index][0] + NODE_SPACING[0])
+        mux.pos_y.set_value(new_positions[index][1])
+        flame.batch.connect_nodes(node, socket, mux, 'Input_0')
+
+        if alpha:
+            flame.batch.connect_nodes(node, alpha, mux, 'Matte_0')
+
 
 def mux_shit_up(selection):
     """Process all selected nodes."""
@@ -51,22 +141,7 @@ def mux_shit_up(selection):
     message('Script called from {}'.format(__file__))
 
     for node in selection:
-        node_position = (node.pos_x.get_value(), node.pos_y.get_value())
-        sockets = node.output_sockets
-
-        for number, socket in enumerate(sockets):
-            if number > 0:
-                if all((socket.startswith(sockets[number - 1]),
-                        socket.endswith('_alpha'))):
-                    flame.batch.connect_nodes(node, socket, mux, 'Matte_0')
-                    continue
-
-            mux = flame.batch.create_node('Mux')
-            mux.name.set_value('_'.join((node.name.get_value(), socket)))
-            mux.pos_x.set_value(node_position[0] + NODE_SPACING[0])
-            mux.pos_y.set_value(node_position[1] - NODE_SPACING[1] * number)
-            flame.batch.connect_nodes(node, socket, mux, 'Input_0')
-
+        connect_downstream_mux(node)
     message('Done!')
 
 
@@ -81,5 +156,4 @@ def get_batch_custom_ui_actions():
              'actions': [{'name': 'About to Mux Shit Up',
                           'isVisible': scope_clip_node,
                           'execute': mux_shit_up,
-                          'minimumVersion': '2022'}]
-            }]
+                          'minimumVersion': '2022'}]}]
