@@ -2,13 +2,13 @@
 Script Name: About to Mux Shit Up
 Written By: Kieran Hanrahan
 
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2022
 
 URL: http://github.com/khanrahan/about-to-mux-shit-up
 
 Creation Date: 02.22.24
-Update Date: 02.24.24
+Update Date: 02.28.24
 
 Description:
 
@@ -31,12 +31,13 @@ To Install:
 import flame
 
 TITLE = 'About to Mux Shit Up'
-VERSION_INFO = (1, 0, 0)
+VERSION_INFO = (1, 0, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = '{} v{}'.format(TITLE, VERSION)
 MESSAGE_PREFIX = '[PYTHON]'
 
 NODE_SPACING = (400, 140)
+OFFSET_THUMBNAIL = 48
 
 
 def message(string):
@@ -70,17 +71,17 @@ def create_socket_pairs(sockets):
     return result
 
 
-def calculate_positions(anchor_node, quantity, spacing, axis_x=True, axis_y=True,
-                        offset=11):
+def calculate_positions(anchor_node, quantity, spacing, offset, axis_x=True,
+                        axis_y=True):
     """Generate new positions that are evely distributed based on the anchor node.
 
     Args:
         anchor_node (Flame PyNode object): Node to be used for starting position.
         quantity (int): The intended number of new positions to evenly distribute.
         spacing (tuple): Spacing between positions on X & Y axis as integers.
+        offset (int): Offset node position by this amount if expanded.
         axis_x (bool, optional): Generate distributed positions for the x axis?
         axis_y (bool, optional): Generate disributed positions for the y axis?
-        offset (int, optional): Offset necessary when anchor_node is expanded.
 
     Returns:
         A list of tuples containing integers representing the X & Y positions for the
@@ -92,26 +93,19 @@ def calculate_positions(anchor_node, quantity, spacing, axis_x=True, axis_y=True
     distance_horizontal = (quantity - 1) * spacing[0]
     distance_vertical = (quantity - 1) * spacing[1]
 
-    start_position_x = anchor_position[0] + int(distance_horizontal / 2)
-    start_position_y = anchor_position[1] + int(distance_vertical / 2)
+    start_position = [anchor_position[0] + int(distance_horizontal / 2),
+                      anchor_position[1] + int(distance_vertical / 2)]
+
+    if not anchor_node.collapsed.get_value():
+        start_position[1] = start_position[1] - offset
 
     for index in range(quantity):
-        if axis_x and anchor_node.collapsed.get_value():
-            x = start_position_x - index * spacing[0]
-        elif axis_x and not anchor_node.collapsed.get_value():
-            x = (start_position_x - index * spacing[0]) - (quantity - 1) * offset
-        else:
-            x = anchor_position[0]
-
-        if axis_y and anchor_node.collapsed.get_value():
-            y = start_position_y - index * spacing[1]
-        elif axis_y and not anchor_node.collapsed.get_value():
-            y = (start_position_y - index * spacing[1]) - (quantity - 1) * offset
-        else:
-            y = anchor_position[1]
+        x = start_position[0] - index * spacing[0] if axis_x else anchor_position[0]
+        y = start_position[1] - index * spacing[1] if axis_y else anchor_position[1]
 
         position = (x, y)
         result.append(position)
+
     return result
 
 
@@ -123,7 +117,7 @@ def connect_downstream_mux(node):
     """
     socket_pairs = create_socket_pairs(node.output_sockets)
     new_positions = calculate_positions(
-            node, len(socket_pairs), NODE_SPACING, axis_x=False)
+            node, len(socket_pairs), NODE_SPACING, OFFSET_THUMBNAIL, axis_x=False)
 
     for index, (socket, alpha) in enumerate(socket_pairs):
         mux = flame.batch.create_node('Mux')
